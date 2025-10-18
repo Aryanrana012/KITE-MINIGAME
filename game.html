@@ -1,4 +1,5 @@
 <!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -16,15 +17,12 @@
     button{background:linear-gradient(180deg,rgba(106,209,255,0.18),rgba(106,209,255,0.06));border:1px solid rgba(106,209,255,0.35);color:var(--accent);padding:9px 16px;border-radius:10px;cursor:pointer;transition:all 0.18s;font-weight:600;letter-spacing:0.3px}
     button:hover{background:linear-gradient(180deg,rgba(106,209,255,0.3),rgba(106,209,255,0.12));transform:translateY(-1px) scale(1.01);box-shadow:0 8px 16px rgba(77,212,255,0.18)}
     .info{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .hud{display:flex;flex-direction:column;gap:4px;align-items:flex-start;font-size:14px;background:rgba(4,34,55,0.55);padding:6px 12px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(106,209,255,0.06)}
+    .hud{display:flex;gap:8px;align-items:center;font-size:14px;background:rgba(4,34,55,0.55);padding:8px 14px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(106,209,255,0.06)}
     .hud strong{color:var(--accent);font-size:17px}
-    .hud .label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
-    .power-badge{min-width:160px;max-width:200px}
-    .power-badge .active{font-size:13px;color:#e6f7ff;text-shadow:0 0 12px rgba(106,209,255,0.4)}
-    .power-meter{width:100%;height:4px;background:rgba(106,209,255,0.12);border-radius:999px;overflow:hidden}
-    .power-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--glow));width:0%;transition:width 0.2s ease-out}
-    .power-fill[data-type='invisibility']{background:linear-gradient(90deg,#9f86ff,#cbb2ff)}
-    .power-fill[data-type='superspeed']{background:linear-gradient(90deg,#4dd4ff,#5cff9c)}
+    .power-badge{background:rgba(159,134,255,0.15);border:1px solid rgba(159,134,255,0.3);padding:6px 12px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px}
+    .power-badge.active{background:rgba(159,134,255,0.3);animation:pulse 1s infinite}
+    .power-badge.fire{background:rgba(255,107,107,0.15);border-color:rgba(255,107,107,0.3)}
+    .power-badge.fire.active{background:rgba(255,107,107,0.3)}
     .small{font-size:12px;color:var(--muted)}
     .popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.82);background:linear-gradient(180deg,#071b2b,#042031);border:2px solid rgba(106,209,255,0.42);padding:26px 32px;border-radius:18px;box-shadow:0 24px 68px rgba(2,10,20,0.82);z-index:50;text-align:center;opacity:0;pointer-events:none;transition:all 0.28s}
     .popup.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all}
@@ -33,8 +31,8 @@
     .progress-bar{width:220px;height:7px;background:rgba(106,209,255,0.08);border-radius:999px;overflow:hidden;margin:8px 0;box-shadow:0 0 10px rgba(77,212,255,0.15)}
     .progress-fill{height:100%;background:linear-gradient(90deg,#6ad1ff,#4dd4ff,#45b3ff);transition:width 0.25s ease-out}
     footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);font-size:13px;flex-wrap:wrap;gap:8px}
-    .level-indicator{font-size:13px;padding:4px 10px;background:rgba(106,209,255,0.1);border-radius:6px}
     @media (max-width:600px){.card{padding:10px}.popup{width:90vw}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.8;transform:scale(1.05)}}
   </style>
 </head>
 <body>
@@ -43,12 +41,13 @@
       <header>
         <div>
           <h1>🚀 Agent Runner — WindRunner Edition</h1>
-          <div class="meta">Fly as a WindRunner agent. Collect KITE tokens. Dodge bugs. Level up every 100 tokens.</div>
+          <div class="meta">Collect KITE tokens. Dodge bugs. Grab power-ups for special abilities!</div>
         </div>
         <div class="info">
           <div class="hud">Score: <strong id="score">0</strong></div>
           <div class="hud">Best: <strong id="best">0</strong></div>
-          <div class="hud level-indicator">Level: <strong id="level">1</strong></div>
+          <div class="power-badge" id="speedPower" style="display:none">⚡ Speed <span id="speedTime">0</span>s</div>
+          <div class="power-badge fire" id="firePower" style="display:none">🔥 Auto-Fire <span id="fireTime">0</span>s</div>
         </div>
       </header>
 
@@ -59,7 +58,7 @@
       <canvas id="gameCanvas" width="860" height="320"></canvas>
 
       <div class="controls">
-        <div class="small">Controls: Space / Up / Tap to jump</div>
+        <div class="small">Controls: Space / Up / Tap to jump | Collect power-ups: ⚡Speed & 🔥Auto-Fire</div>
         <div style="flex:1"></div>
         <button id="startBtn">▶ Start</button>
         <button id="pauseBtn" style="display:none">⏸ Pause</button>
@@ -76,7 +75,7 @@
   <div id="levelPopup" class="popup">
     <div class="popup-title">⚡ Level Up! Agentic Power Increased ⚡</div>
     <div class="small" style="margin-top:8px">You reached <span id="popupScore">0</span> KITE tokens.</div>
-    <div class="small" style="margin-top:4px;color:#6ad1ff">Level <span id="popupLevel">1</span> Unlocked!</div>
+    <div class="small" style="margin-top:4px;color:#6ad1ff">Level <span id="popupLevel">1</span> Achieved!</div>
     <div class="cta"><button id="closePopup">✨ Continue</button></div>
   </div>
 
@@ -102,11 +101,18 @@
   const player = {
     x: 80, y: groundY - 40, w: 44, h: 40,
     vy: 0, jumpForce: -15, grounded: true,
-    rotation: 0, targetRotation: 0, thrustAnim: 0
+    rotation: 0, targetRotation: 0, thrustAnim: 0,
+    speedBoost: false, speedTimer: 0,
+    autoFire: false, fireTimer: 0,
+    invisible: false
   };
 
   const tokens = [], bugs = [], particles = [], stars = [], dataStreams = [];
+  const powerups = []; // NEW: Power-ups array
+  const projectiles = []; // NEW: Fire projectiles
+  
   let spawnTimer = 0, spawnInterval = 85, speed = 3.5;
+  let powerupSpawnTimer = 0, powerupSpawnInterval = 300; // Spawn power-ups every ~5 seconds
 
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   let muted = false;
@@ -130,6 +136,26 @@
         case 'collect':
           osc.frequency.value = 1400;
           gain.gain.value = 0.1;
+          osc.start();
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+          osc.stop(audioCtx.currentTime + 0.08);
+          break;
+        case 'powerup':
+          [1200, 1600, 2000].forEach((freq, i) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.frequency.value = freq;
+            g.gain.value = 0.09;
+            o.start(audioCtx.currentTime + i * 0.05);
+            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + i * 0.05 + 0.12);
+            o.stop(audioCtx.currentTime + i * 0.05 + 0.12);
+          });
+          break;
+        case 'fire':
+          osc.frequency.value = 600;
+          gain.gain.value = 0.06;
           osc.start();
           gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
           osc.stop(audioCtx.currentTime + 0.08);
@@ -220,46 +246,105 @@
     if (spawnInterval > 30) spawnInterval -= 0.05;
     
     const r = Math.random();
-    if (r < 0.6) {
+    if (r < 0.55) {
       tokens.push({
-        x: W + 20, y: groundY - 40 - Math.random() * 120,
-        w: 20, h: 20, vx: -speed, glow: 0
+        x: W + 20, y: groundY - 40 - Math.random() * 140,
+        w: 20, h: 20, vx: -(speed + (player.speedBoost ? 2 : 0)), glow: 0
       });
     } else {
       bugs.push({
         x: W + 40, y: groundY - 32,
-        w: 32, h: 32, vx: -(speed + Math.random() * 2)
+        w: 32, h: 32, vx: -(speed + Math.random() * 2 + (player.speedBoost ? 2 : 0))
       });
     }
+  }
+
+  // NEW: Spawn power-ups
+  function spawnPowerup() {
+    if (gameState !== 'running') return;
+    powerupSpawnTimer++;
+    if (powerupSpawnTimer < powerupSpawnInterval) return;
+    powerupSpawnTimer = 0;
+    
+    const type = Math.random() < 0.5 ? 'speed' : 'fire';
+    powerups.push({
+      x: W + 30,
+      y: groundY - 50 - Math.random() * 100,
+      w: 28,
+      h: 28,
+      vx: -(speed + (player.speedBoost ? 2 : 0)),
+      type: type,
+      glow: 0
+    });
+  }
+
+  // NEW: Fire projectiles
+  function fireProjectile() {
+    projectiles.push({
+      x: player.x + player.w,
+      y: player.y + player.h / 2 - 4,
+      w: 16,
+      h: 8,
+      vx: 8
+    });
+    playSound('fire');
   }
 
   function reset() {
     tokens.length = 0;
     bugs.length = 0;
     particles.length = 0;
+    powerups.length = 0;
+    projectiles.length = 0;
     score = 0;
     level = 1;
     speed = 3.5;
     spawnInterval = 85;
     spawnTimer = 0;
+    powerupSpawnTimer = 0;
     frames = 0;
     player.y = groundY - player.h;
     player.vy = 0;
     player.rotation = 0;
     player.grounded = true;
+    player.speedBoost = false;
+    player.speedTimer = 0;
+    player.autoFire = false;
+    player.fireTimer = 0;
+    player.invisible = false;
     gameState = 'running';
     updateUI();
     document.getElementById('pauseBtn').style.display = 'inline-block';
     document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('speedPower').style.display = 'none';
+    document.getElementById('firePower').style.display = 'none';
     initBackground();
     if (audioCtx.state === 'suspended') audioCtx.resume();
   }
 
   function updateUI() {
     document.getElementById('score').innerText = score;
-    document.getElementById('level').innerText = level;
     const progress = (score % 100) / 100 * 100;
     document.getElementById('progressBar').style.width = progress + '%';
+    
+    // Update power-up displays
+    if (player.speedBoost) {
+      const speedBadge = document.getElementById('speedPower');
+      speedBadge.style.display = 'flex';
+      speedBadge.classList.add('active');
+      document.getElementById('speedTime').innerText = Math.ceil(player.speedTimer / 60);
+    } else {
+      document.getElementById('speedPower').style.display = 'none';
+    }
+    
+    if (player.autoFire) {
+      const fireBadge = document.getElementById('firePower');
+      fireBadge.style.display = 'flex';
+      fireBadge.classList.add('active');
+      document.getElementById('fireTime').innerText = Math.ceil(player.fireTimer / 60);
+    } else {
+      document.getElementById('firePower').style.display = 'none';
+    }
   }
 
   function showLevelPopup() {
@@ -349,10 +434,34 @@
   window.addEventListener('resize', resize);
   resize();
 
+  let fireInterval = 0;
+
   function update() {
     frames++;
 
     if (gameState === 'running') {
+      // Power-up timers
+      if (player.speedBoost) {
+        player.speedTimer--;
+        if (player.speedTimer <= 0) {
+          player.speedBoost = false;
+          player.invisible = false;
+        }
+      }
+      
+      if (player.autoFire) {
+        player.fireTimer--;
+        fireInterval++;
+        if (fireInterval >= 20) {
+          fireProjectile();
+          fireInterval = 0;
+        }
+        if (player.fireTimer <= 0) {
+          player.autoFire = false;
+        }
+      }
+
+      // Player physics
       player.vy += gravity * 0.65;
       player.y += player.vy;
       
@@ -372,23 +481,41 @@
       player.thrustAnim = (player.thrustAnim + 0.3) % (Math.PI * 2);
 
       spawn();
+      spawnPowerup();
 
+      // Update tokens
       for (let i = tokens.length - 1; i >= 0; i--) {
         tokens[i].x += tokens[i].vx;
         tokens[i].glow = (tokens[i].glow + 0.15) % (Math.PI * 2);
         if (tokens[i].x + tokens[i].w < -20) tokens.splice(i, 1);
       }
 
+      // Update bugs
       for (let i = bugs.length - 1; i >= 0; i--) {
         bugs[i].x += bugs[i].vx;
         if (bugs[i].x + bugs[i].w < -40) bugs.splice(i, 1);
       }
 
+      // Update power-ups
+      for (let i = powerups.length - 1; i >= 0; i--) {
+        powerups[i].x += powerups[i].vx;
+        powerups[i].glow = (powerups[i].glow + 0.2) % (Math.PI * 2);
+        if (powerups[i].x + powerups[i].w < -30) powerups.splice(i, 1);
+      }
+
+      // Update projectiles
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        projectiles[i].x += projectiles[i].vx;
+        if (projectiles[i].x > W + 20) projectiles.splice(i, 1);
+      }
+
+      // Update particles
       for (let i = particles.length - 1; i >= 0; i--) {
         particles[i].update();
         if (particles[i].life <= 0) particles.splice(i, 1);
       }
 
+      // Token collisions
       for (let i = tokens.length - 1; i >= 0; i--) {
         if (collides(player, tokens[i])) {
           const token = tokens[i];
@@ -411,25 +538,71 @@
         }
       }
 
-      for (let i = bugs.length - 1; i >= 0; i--) {
-        if (collides(player, bugs[i])) {
-          playSound('crash');
-          gameState = 'gameover';
+      // Power-up collisions
+      for (let i = powerups.length - 1; i >= 0; i--) {
+        if (collides(player, powerups[i])) {
+          const powerup = powerups[i];
+          powerups.splice(i, 1);
+          playSound('powerup');
           
-          for (let j = 0; j < 20; j++) {
-            particles.push(new Particle(player.x + player.w/2, player.y + player.h/2, '#ffb4a2'));
+          for (let j = 0; j < 12; j++) {
+            const color = powerup.type === 'speed' ? '#9f86ff' : '#ff6b6b';
+            particles.push(new Particle(powerup.x + powerup.w/2, powerup.y + powerup.h/2, color));
           }
           
-          if (score > best) {
-            best = score;
-            localStorage.setItem('agentRunnerBest', best);
-            document.getElementById('best').innerText = best;
+          if (powerup.type === 'speed') {
+            player.speedBoost = true;
+            player.invisible = true;
+            player.speedTimer = 300; // 5 seconds at 60fps
+          } else if (powerup.type === 'fire') {
+            player.autoFire = true;
+            player.fireTimer = 360; // 6 seconds at 60fps
+            fireInterval = 0;
           }
-          
-          setTimeout(showGameOver, 500);
-          document.getElementById('pauseBtn').style.display = 'none';
-          document.getElementById('startBtn').style.display = 'inline-block';
-          document.getElementById('startBtn').innerHTML = '🔄 Restart';
+          updateUI();
+        }
+      }
+
+      // Projectile vs bug collisions
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        for (let j = bugs.length - 1; j >= 0; j--) {
+          if (collides(projectiles[i], bugs[j])) {
+            const bug = bugs[j];
+            bugs.splice(j, 1);
+            projectiles.splice(i, 1);
+            score += 5; // Bonus for destroying bugs
+            updateUI();
+            
+            for (let k = 0; k < 10; k++) {
+              particles.push(new Particle(bug.x + bug.w/2, bug.y + bug.h/2, '#ffb4a2'));
+            }
+            break;
+          }
+        }
+      }
+
+      // Bug collisions (only if not invisible)
+      if (!player.invisible) {
+        for (let i = bugs.length - 1; i >= 0; i--) {
+          if (collides(player, bugs[i])) {
+            playSound('crash');
+            gameState = 'gameover';
+            
+            for (let j = 0; j < 20; j++) {
+              particles.push(new Particle(player.x + player.w/2, player.y + player.h/2, '#ffb4a2'));
+            }
+            
+            if (score > best) {
+              best = score;
+              localStorage.setItem('agentRunnerBest', best);
+              document.getElementById('best').innerText = best;
+            }
+            
+            setTimeout(showGameOver, 500);
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('startBtn').innerHTML = '🔄 Restart';
+          }
         }
       }
     }
@@ -446,7 +619,7 @@
     ctx.fillRect(0, 0, W, H);
 
     for (const star of stars) {
-      star.x -= star.speed;
+      star.x -= star.speed * (player.speedBoost ? 2 : 1);
       if (star.x < -5) star.x = W + 5;
       
       ctx.globalAlpha = star.opacity;
@@ -458,7 +631,7 @@
     ctx.globalAlpha = 1;
 
     for (const stream of dataStreams) {
-      stream.x -= stream.speed;
+      stream.x -= stream.speed * (player.speedBoost ? 2 : 1);
       if (stream.x < -stream.length) stream.x = W + 20;
       
       ctx.globalAlpha = stream.opacity;
@@ -474,7 +647,7 @@
     ctx.globalAlpha = 0.06;
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < 6; i++) {
-      const cx = (i * 260 - (frames * 0.5) % 260);
+      const cx = (i * 260 - (frames * 0.5 * (player.speedBoost ? 2 : 1)) % 260);
       ctx.beginPath();
       ctx.ellipse(cx, 60 + (i % 2) * 14, 80, 26, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -489,7 +662,7 @@
     ctx.strokeStyle = 'rgba(106, 209, 255, 0.08)';
     ctx.lineWidth = 2;
     for (let i = 0; i < 25; i++) {
-      const x = (i * 50 + (frames * 0.8 % 50));
+      const x = (i * 50 + (frames * 0.8 * (player.speedBoost ? 2 : 1) % 50));
       ctx.beginPath();
       ctx.moveTo(-30 + x, groundY + 2);
       ctx.lineTo(-10 + x, groundY + 2);
@@ -498,19 +671,23 @@
   }
 
   function drawPlayer() {
+    if (player.invisible) {
+      ctx.globalAlpha = 0.3 + Math.sin(frames * 0.3) * 0.2;
+    }
+    
     ctx.save();
     ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
     ctx.rotate((player.rotation * Math.PI) / 180);
     
-    ctx.fillStyle = '#dbeefe';
+    ctx.fillStyle = player.speedBoost ? '#cbb2ff' : '#dbeefe';
     ctx.fillRect(-player.w / 2, -player.h / 2, player.w, player.h);
     
     ctx.fillStyle = '#023048';
     ctx.fillRect(-player.w / 2 + 6, -player.h / 2 + 10, player.w - 12, 8);
     
-    ctx.fillStyle = '#6ad1ff';
+    ctx.fillStyle = player.speedBoost ? '#9f86ff' : '#6ad1ff';
     ctx.shadowBlur = 10;
-    ctx.shadowColor = '#6ad1ff';
+    ctx.shadowColor = player.speedBoost ? '#9f86ff' : '#6ad1ff';
     ctx.beginPath();
     ctx.moveTo(player.w / 2, -6);
     ctx.lineTo(player.w / 2 + 20, -14);
@@ -521,7 +698,7 @@
     
     if (!player.grounded) {
       const thrustSize = Math.sin(player.thrustAnim) * 3 + 8;
-      ctx.fillStyle = 'rgba(106, 209, 255, 0.6)';
+      ctx.fillStyle = player.speedBoost ? 'rgba(159, 134, 255, 0.6)' : 'rgba(106, 209, 255, 0.6)';
       ctx.beginPath();
       ctx.moveTo(-player.w / 2, player.h / 2 - 8);
       ctx.lineTo(-player.w / 2 - thrustSize, player.h / 2);
@@ -531,6 +708,7 @@
     }
     
     ctx.restore();
+    ctx.globalAlpha = 1;
   }
 
   function drawTokens() {
@@ -565,6 +743,68 @@
     }
   }
 
+  function drawPowerups() {
+    for (const powerup of powerups) {
+      ctx.save();
+      ctx.translate(powerup.x + powerup.w / 2, powerup.y + powerup.h / 2);
+      
+      const glowSize = Math.sin(powerup.glow) * 4 + 10;
+      ctx.shadowBlur = glowSize;
+      
+      if (powerup.type === 'speed') {
+        ctx.shadowColor = '#9f86ff';
+        ctx.fillStyle = '#9f86ff';
+        ctx.beginPath();
+        ctx.moveTo(-powerup.w / 2, 0);
+        ctx.lineTo(0, -powerup.h / 2);
+        ctx.lineTo(powerup.w / 2, 0);
+        ctx.lineTo(0, powerup.h / 2);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡', 0, 0);
+      } else {
+        ctx.shadowColor = '#ff6b6b';
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc(0, 0, powerup.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🔥', 0, 0);
+      }
+      
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  function drawProjectiles() {
+    for (const proj of projectiles) {
+      ctx.save();
+      ctx.fillStyle = '#ff6b6b';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#ff6b6b';
+      
+      ctx.beginPath();
+      ctx.moveTo(proj.x, proj.y + proj.h / 2);
+      ctx.lineTo(proj.x + proj.w, proj.y);
+      ctx.lineTo(proj.x + proj.w, proj.y + proj.h);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
   function drawBugs() {
     for (const bug of bugs) {
       ctx.save();
@@ -590,20 +830,24 @@
     for (const p of particles) p.draw();
     
     drawTokens();
+    drawPowerups();
+    drawProjectiles();
     drawBugs();
     
     if (gameState !== 'gameover') drawPlayer();
     
     if (gameState === 'intro') {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#dff6ff';
-      ctx.font = '20px system-ui,Arial';
+      ctx.font = '22px system-ui,Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('Press Start or Space to Launch', W / 2, H / 2 - 20);
-      ctx.font = '14px system-ui,Arial';
+      ctx.fillText('Press Start or Space to Launch', W / 2, H / 2 - 30);
+      ctx.font = '15px system-ui,Arial';
       ctx.fillStyle = '#9fc9d8';
-      ctx.fillText('Collect KITE tokens - Avoid bugs - Level up every 100', W / 2, H / 2 + 10);
+      ctx.fillText('Collect KITE tokens - Grab power-ups - Avoid bugs', W / 2, H / 2);
+      ctx.fillStyle = '#6ad1ff';
+      ctx.fillText('⚡ Speed Boost + Invisibility | 🔥 Auto-Fire', W / 2, H / 2 + 25);
       ctx.textAlign = 'left';
     }
     
@@ -617,11 +861,11 @@
       ctx.textAlign = 'left';
     }
     
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.fillRect(8, 8, 170, 36);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(8, 8, 180, 40);
     ctx.fillStyle = '#dff6ff';
-    ctx.font = '16px system-ui,Arial';
-    ctx.fillText('KITE: ' + score, 18, 30);
+    ctx.font = '18px system-ui,Arial';
+    ctx.fillText('KITE: ' + score, 18, 32);
   }
 
   initBackground();
