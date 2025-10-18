@@ -1,0 +1,639 @@
+<!doctype html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agent Runner — Enhanced WindRunner Edition</title>
+  <style>
+    :root{--bg:#050d1f;--card:#0f1724;--accent:#6ad1ff;--muted:#94a3b8;--glow:#4dd4ff}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:radial-gradient(circle at 20% -20%,rgba(77,212,255,0.18),transparent 45%),radial-gradient(circle at 80% 0,rgba(77,212,255,0.12),transparent 54%),linear-gradient(180deg,var(--bg),#071026);color:#e6eef8;overflow:hidden}
+    .wrap{display:grid;place-items:center;padding:18px;min-height:100vh}
+    .card{width:920px;max-width:96vw;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:16px;padding:18px;box-shadow:0 18px 40px rgba(2,6,23,0.55);border:1px solid rgba(106,209,255,0.12);backdrop-filter:blur(12px)}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{font-size:20px;margin:0;color:var(--accent);text-shadow:0 0 14px rgba(106,209,255,0.35)}
+    .meta{color:var(--muted);font-size:13px}
+    #gameCanvas{display:block;width:100%;background:#041223;border-radius:8px;cursor:pointer;box-shadow:0 4px 20px rgba(106,209,255,0.15)}
+    .controls{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+    button{background:linear-gradient(180deg,rgba(106,209,255,0.18),rgba(106,209,255,0.06));border:1px solid rgba(106,209,255,0.35);color:var(--accent);padding:9px 16px;border-radius:10px;cursor:pointer;transition:all 0.18s;font-weight:600;letter-spacing:0.3px}
+    button:hover{background:linear-gradient(180deg,rgba(106,209,255,0.3),rgba(106,209,255,0.12));transform:translateY(-1px) scale(1.01);box-shadow:0 8px 16px rgba(77,212,255,0.18)}
+    .info{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .hud{display:flex;flex-direction:column;gap:4px;align-items:flex-start;font-size:14px;background:rgba(4,34,55,0.55);padding:6px 12px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(106,209,255,0.06)}
+    .hud strong{color:var(--accent);font-size:17px}
+    .hud .label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+    .power-badge{min-width:160px;max-width:200px}
+    .power-badge .active{font-size:13px;color:#e6f7ff;text-shadow:0 0 12px rgba(106,209,255,0.4)}
+    .power-meter{width:100%;height:4px;background:rgba(106,209,255,0.12);border-radius:999px;overflow:hidden}
+    .power-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--glow));width:0%;transition:width 0.2s ease-out}
+    .power-fill[data-type='invisibility']{background:linear-gradient(90deg,#9f86ff,#cbb2ff)}
+    .power-fill[data-type='superspeed']{background:linear-gradient(90deg,#4dd4ff,#5cff9c)}
+    .small{font-size:12px;color:var(--muted)}
+    .popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.82);background:linear-gradient(180deg,#071b2b,#042031);border:2px solid rgba(106,209,255,0.42);padding:26px 32px;border-radius:18px;box-shadow:0 24px 68px rgba(2,10,20,0.82);z-index:50;text-align:center;opacity:0;pointer-events:none;transition:all 0.28s}
+    .popup.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all}
+    .popup-title{font-size:24px;font-weight:700;color:var(--accent);margin-bottom:8px}
+    .cta{margin-top:14px}
+    .progress-bar{width:220px;height:7px;background:rgba(106,209,255,0.08);border-radius:999px;overflow:hidden;margin:8px 0;box-shadow:0 0 10px rgba(77,212,255,0.15)}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#6ad1ff,#4dd4ff,#45b3ff);transition:width 0.25s ease-out}
+    footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);font-size:13px;flex-wrap:wrap;gap:8px}
+    .level-indicator{font-size:13px;padding:4px 10px;background:rgba(106,209,255,0.1);border-radius:6px}
+    @media (max-width:600px){.card{padding:10px}.popup{width:90vw}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div>
+          <h1>🚀 Agent Runner — WindRunner Edition</h1>
+          <div class="meta">Fly as a WindRunner agent. Collect KITE tokens. Dodge bugs. Level up every 100 tokens.</div>
+        </div>
+        <div class="info">
+          <div class="hud">Score: <strong id="score">0</strong></div>
+          <div class="hud">Best: <strong id="best">0</strong></div>
+          <div class="hud level-indicator">Level: <strong id="level">1</strong></div>
+        </div>
+      </header>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressBar" style="width:0%"></div>
+      </div>
+
+      <canvas id="gameCanvas" width="860" height="320"></canvas>
+
+      <div class="controls">
+        <div class="small">Controls: Space / Up / Tap to jump</div>
+        <div style="flex:1"></div>
+        <button id="startBtn">▶ Start</button>
+        <button id="pauseBtn" style="display:none">⏸ Pause</button>
+        <button id="muteBtn">🔊 Sound</button>
+      </div>
+
+      <footer>
+        <div class="small">Built for GoKiteAI — Agentic Payment Layer ⚡</div>
+        <div class="small"><button id="shareBtn">🐦 Share</button></div>
+      </footer>
+    </div>
+  </div>
+
+  <div id="levelPopup" class="popup">
+    <div class="popup-title">⚡ Level Up! Agentic Power Increased ⚡</div>
+    <div class="small" style="margin-top:8px">You reached <span id="popupScore">0</span> KITE tokens.</div>
+    <div class="small" style="margin-top:4px;color:#6ad1ff">Level <span id="popupLevel">1</span> Unlocked!</div>
+    <div class="cta"><button id="closePopup">✨ Continue</button></div>
+  </div>
+
+  <div id="gameOverPopup" class="popup">
+    <div class="popup-title">🎮 Game Over</div>
+    <div style="margin:12px 0;font-size:16px">Final Score: <strong style="color:#6ad1ff;font-size:20px" id="finalScore">0</strong></div>
+    <div class="small">Best: <span id="finalBest">0</span></div>
+    <div class="cta"><button id="restartBtn">🔄 Play Again</button></div>
+  </div>
+
+  <script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let W = canvas.width, H = canvas.height;
+
+  let gameState = 'intro';
+  let score = 0, level = 1, frames = 0;
+  let best = parseInt(localStorage.getItem('agentRunnerBest') || '0', 10);
+  document.getElementById('best').innerText = best;
+
+  const gravity = 0.85, groundY = H - 40;
+
+  const player = {
+    x: 80, y: groundY - 40, w: 44, h: 40,
+    vy: 0, jumpForce: -15, grounded: true,
+    rotation: 0, targetRotation: 0, thrustAnim: 0
+  };
+
+  const tokens = [], bugs = [], particles = [], stars = [], dataStreams = [];
+  let spawnTimer = 0, spawnInterval = 85, speed = 3.5;
+
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let muted = false;
+
+  function playSound(type) {
+    if (muted) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      switch(type) {
+        case 'jump':
+          osc.frequency.value = 800;
+          gain.gain.value = 0.08;
+          osc.start();
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+          osc.stop(audioCtx.currentTime + 0.05);
+          break;
+        case 'collect':
+          osc.frequency.value = 1400;
+          gain.gain.value = 0.1;
+          osc.start();
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+          osc.stop(audioCtx.currentTime + 0.08);
+          break;
+        case 'levelup':
+          [1600, 1800, 2000].forEach((freq, i) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.frequency.value = freq;
+            g.gain.value = 0.08;
+            o.start(audioCtx.currentTime + i * 0.08);
+            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + i * 0.08 + 0.15);
+            o.stop(audioCtx.currentTime + i * 0.08 + 0.15);
+          });
+          break;
+        case 'crash':
+          osc.type = 'sawtooth';
+          osc.frequency.value = 100;
+          gain.gain.value = 0.15;
+          osc.start();
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+          osc.stop(audioCtx.currentTime + 0.2);
+          break;
+      }
+    } catch(e) {}
+  }
+
+  class Particle {
+    constructor(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.vx = (Math.random() - 0.5) * 3;
+      this.vy = (Math.random() - 0.5) * 3 - 1;
+      this.life = 1;
+      this.color = color;
+      this.size = Math.random() * 3 + 2;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += 0.15;
+      this.life -= 0.02;
+    }
+    draw() {
+      ctx.globalAlpha = this.life;
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function initBackground() {
+    stars.length = 0;
+    for (let i = 0; i < 100; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        size: Math.random() * 2 + 0.5,
+        speed: Math.random() * 0.3 + 0.1,
+        opacity: Math.random() * 0.5 + 0.3
+      });
+    }
+    dataStreams.length = 0;
+    for (let i = 0; i < 8; i++) {
+      dataStreams.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        length: Math.random() * 60 + 40,
+        speed: Math.random() * 1.5 + 0.8,
+        opacity: Math.random() * 0.2 + 0.1
+      });
+    }
+  }
+
+  function collides(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function spawn() {
+    if (gameState !== 'running') return;
+    spawnTimer++;
+    if (spawnTimer < spawnInterval) return;
+    spawnTimer = 0;
+    if (spawnInterval > 30) spawnInterval -= 0.05;
+    
+    const r = Math.random();
+    if (r < 0.6) {
+      tokens.push({
+        x: W + 20, y: groundY - 40 - Math.random() * 120,
+        w: 20, h: 20, vx: -speed, glow: 0
+      });
+    } else {
+      bugs.push({
+        x: W + 40, y: groundY - 32,
+        w: 32, h: 32, vx: -(speed + Math.random() * 2)
+      });
+    }
+  }
+
+  function reset() {
+    tokens.length = 0;
+    bugs.length = 0;
+    particles.length = 0;
+    score = 0;
+    level = 1;
+    speed = 3.5;
+    spawnInterval = 85;
+    spawnTimer = 0;
+    frames = 0;
+    player.y = groundY - player.h;
+    player.vy = 0;
+    player.rotation = 0;
+    player.grounded = true;
+    gameState = 'running';
+    updateUI();
+    document.getElementById('pauseBtn').style.display = 'inline-block';
+    document.getElementById('startBtn').style.display = 'none';
+    initBackground();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function updateUI() {
+    document.getElementById('score').innerText = score;
+    document.getElementById('level').innerText = level;
+    const progress = (score % 100) / 100 * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+  }
+
+  function showLevelPopup() {
+    document.getElementById('popupScore').innerText = score;
+    document.getElementById('popupLevel').innerText = level;
+    document.getElementById('levelPopup').classList.add('show');
+  }
+
+  function hideLevelPopup() {
+    document.getElementById('levelPopup').classList.remove('show');
+  }
+
+  function showGameOver() {
+    document.getElementById('finalScore').innerText = score;
+    document.getElementById('finalBest').innerText = best;
+    document.getElementById('gameOverPopup').classList.add('show');
+  }
+
+  function hideGameOver() {
+    document.getElementById('gameOverPopup').classList.remove('show');
+  }
+
+  document.getElementById('closePopup').addEventListener('click', hideLevelPopup);
+  document.getElementById('startBtn').addEventListener('click', reset);
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    hideGameOver();
+    reset();
+  });
+
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    if (gameState === 'running') {
+      gameState = 'paused';
+      document.getElementById('pauseBtn').innerHTML = '▶ Resume';
+    } else if (gameState === 'paused') {
+      gameState = 'running';
+      document.getElementById('pauseBtn').innerHTML = '⏸ Pause';
+    }
+  });
+
+  document.getElementById('muteBtn').addEventListener('click', (e) => {
+    muted = !muted;
+    e.target.innerHTML = muted ? '🔇 Sound' : '🔊 Sound';
+  });
+
+  document.getElementById('shareBtn').addEventListener('click', () => {
+    const text = encodeURIComponent(`🚀 I scored ${score} in Agent Runner! Built for @GoKiteAI #AgentRunner #KiteAI\n\nCan you beat me? 💪`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+  });
+
+  function jump() {
+    if (gameState !== 'running') return;
+    if (player.grounded) {
+      player.vy = player.jumpForce;
+      player.grounded = false;
+      player.targetRotation = -15;
+      playSound('jump');
+    }
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      if (gameState === 'intro') reset();
+      else jump();
+    }
+  });
+
+  canvas.addEventListener('click', () => {
+    if (gameState === 'intro') reset();
+    else jump();
+  });
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (gameState === 'intro') reset();
+    else jump();
+  }, {passive: false});
+
+  function resize() {
+    const ratio = Math.min(window.innerWidth * 0.95, 920);
+    canvas.width = Math.floor(ratio - 60);
+    canvas.height = 320;
+    W = canvas.width;
+    H = canvas.height;
+    initBackground();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function update() {
+    frames++;
+
+    if (gameState === 'running') {
+      player.vy += gravity * 0.65;
+      player.y += player.vy;
+      
+      if (player.grounded) {
+        player.targetRotation = 0;
+      } else if (player.vy > 0) {
+        player.targetRotation = 15;
+      }
+      player.rotation += (player.targetRotation - player.rotation) * 0.1;
+      
+      if (player.y + player.h >= groundY) {
+        player.y = groundY - player.h;
+        player.vy = 0;
+        player.grounded = true;
+      }
+
+      player.thrustAnim = (player.thrustAnim + 0.3) % (Math.PI * 2);
+
+      spawn();
+
+      for (let i = tokens.length - 1; i >= 0; i--) {
+        tokens[i].x += tokens[i].vx;
+        tokens[i].glow = (tokens[i].glow + 0.15) % (Math.PI * 2);
+        if (tokens[i].x + tokens[i].w < -20) tokens.splice(i, 1);
+      }
+
+      for (let i = bugs.length - 1; i >= 0; i--) {
+        bugs[i].x += bugs[i].vx;
+        if (bugs[i].x + bugs[i].w < -40) bugs.splice(i, 1);
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        if (particles[i].life <= 0) particles.splice(i, 1);
+      }
+
+      for (let i = tokens.length - 1; i >= 0; i--) {
+        if (collides(player, tokens[i])) {
+          const token = tokens[i];
+          tokens.splice(i, 1);
+          score += 1;
+          updateUI();
+          playSound('collect');
+          
+          for (let j = 0; j < 8; j++) {
+            particles.push(new Particle(token.x + token.w/2, token.y + token.h/2, '#6ad1ff'));
+          }
+          
+          if (score % 100 === 0) {
+            level++;
+            showLevelPopup();
+            playSound('levelup');
+          }
+          
+          if (score % 10 === 0) speed += 0.15;
+        }
+      }
+
+      for (let i = bugs.length - 1; i >= 0; i--) {
+        if (collides(player, bugs[i])) {
+          playSound('crash');
+          gameState = 'gameover';
+          
+          for (let j = 0; j < 20; j++) {
+            particles.push(new Particle(player.x + player.w/2, player.y + player.h/2, '#ffb4a2'));
+          }
+          
+          if (score > best) {
+            best = score;
+            localStorage.setItem('agentRunnerBest', best);
+            document.getElementById('best').innerText = best;
+          }
+          
+          setTimeout(showGameOver, 500);
+          document.getElementById('pauseBtn').style.display = 'none';
+          document.getElementById('startBtn').style.display = 'inline-block';
+          document.getElementById('startBtn').innerHTML = '🔄 Restart';
+        }
+      }
+    }
+
+    draw();
+    requestAnimationFrame(update);
+  }
+
+  function drawBackground() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#042436');
+    grad.addColorStop(1, '#041223');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    for (const star of stars) {
+      star.x -= star.speed;
+      if (star.x < -5) star.x = W + 5;
+      
+      ctx.globalAlpha = star.opacity;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const stream of dataStreams) {
+      stream.x -= stream.speed;
+      if (stream.x < -stream.length) stream.x = W + 20;
+      
+      ctx.globalAlpha = stream.opacity;
+      ctx.strokeStyle = '#6ad1ff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(stream.x, stream.y);
+      ctx.lineTo(stream.x + stream.length, stream.y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 6; i++) {
+      const cx = (i * 260 - (frames * 0.5) % 260);
+      ctx.beginPath();
+      ctx.ellipse(cx, 60 + (i % 2) * 14, 80, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawGround() {
+    ctx.fillStyle = '#031826';
+    ctx.fillRect(0, groundY, W, H - groundY);
+    
+    ctx.strokeStyle = 'rgba(106, 209, 255, 0.08)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 25; i++) {
+      const x = (i * 50 + (frames * 0.8 % 50));
+      ctx.beginPath();
+      ctx.moveTo(-30 + x, groundY + 2);
+      ctx.lineTo(-10 + x, groundY + 2);
+      ctx.stroke();
+    }
+  }
+
+  function drawPlayer() {
+    ctx.save();
+    ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+    ctx.rotate((player.rotation * Math.PI) / 180);
+    
+    ctx.fillStyle = '#dbeefe';
+    ctx.fillRect(-player.w / 2, -player.h / 2, player.w, player.h);
+    
+    ctx.fillStyle = '#023048';
+    ctx.fillRect(-player.w / 2 + 6, -player.h / 2 + 10, player.w - 12, 8);
+    
+    ctx.fillStyle = '#6ad1ff';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#6ad1ff';
+    ctx.beginPath();
+    ctx.moveTo(player.w / 2, -6);
+    ctx.lineTo(player.w / 2 + 20, -14);
+    ctx.lineTo(player.w / 2 + 20, 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+    if (!player.grounded) {
+      const thrustSize = Math.sin(player.thrustAnim) * 3 + 8;
+      ctx.fillStyle = 'rgba(106, 209, 255, 0.6)';
+      ctx.beginPath();
+      ctx.moveTo(-player.w / 2, player.h / 2 - 8);
+      ctx.lineTo(-player.w / 2 - thrustSize, player.h / 2);
+      ctx.lineTo(-player.w / 2, player.h / 2 + 8);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  }
+
+  function drawTokens() {
+    for (const token of tokens) {
+      ctx.save();
+      ctx.translate(token.x + token.w / 2, token.y + token.h / 2);
+      
+      const glowSize = Math.sin(token.glow) * 3 + 8;
+      ctx.shadowBlur = glowSize;
+      ctx.shadowColor = '#6ad1ff';
+      
+      ctx.beginPath();
+      ctx.moveTo(0, -token.h / 2);
+      ctx.lineTo(token.w / 2, 0);
+      ctx.lineTo(0, token.h / 2);
+      ctx.lineTo(-token.w / 2, 0);
+      ctx.closePath();
+      ctx.fillStyle = '#6ad1ff';
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(0, -token.h / 2 + 7);
+      ctx.lineTo(7, 0);
+      ctx.lineTo(0, token.h / 2 - 7);
+      ctx.lineTo(-7, 0);
+      ctx.closePath();
+      ctx.fillStyle = '#042436';
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  function drawBugs() {
+    for (const bug of bugs) {
+      ctx.save();
+      ctx.translate(bug.x + bug.w / 2, bug.y + bug.h / 2);
+      
+      ctx.beginPath();
+      ctx.ellipse(0, 0, bug.w / 2, bug.h / 2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffb4a2';
+      ctx.fill();
+      
+      ctx.fillStyle = '#041223';
+      ctx.fillRect(-8, -6, 5, 5);
+      ctx.fillRect(4, -6, 5, 5);
+      
+      ctx.restore();
+    }
+  }
+
+  function draw() {
+    drawBackground();
+    drawGround();
+    
+    for (const p of particles) p.draw();
+    
+    drawTokens();
+    drawBugs();
+    
+    if (gameState !== 'gameover') drawPlayer();
+    
+    if (gameState === 'intro') {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#dff6ff';
+      ctx.font = '20px system-ui,Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Press Start or Space to Launch', W / 2, H / 2 - 20);
+      ctx.font = '14px system-ui,Arial';
+      ctx.fillStyle = '#9fc9d8';
+      ctx.fillText('Collect KITE tokens - Avoid bugs - Level up every 100', W / 2, H / 2 + 10);
+      ctx.textAlign = 'left';
+    }
+    
+    if (gameState === 'paused') {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#dff6ff';
+      ctx.font = '24px system-ui,Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', W / 2, H / 2);
+      ctx.textAlign = 'left';
+    }
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(8, 8, 170, 36);
+    ctx.fillStyle = '#dff6ff';
+    ctx.font = '16px system-ui,Arial';
+    ctx.fillText('KITE: ' + score, 18, 30);
+  }
+
+  initBackground();
+  drawIntro();
+  requestAnimationFrame(update);
+
+  function drawIntro() {
+    drawBackground();
+    drawGround();
+    ctx.fillStyle = '#dbeefe';
+    ctx.fillRect(80, groundY - 40, 44, 40);
+  }
+  </script>
+</body>
+</html>
